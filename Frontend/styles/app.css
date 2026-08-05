@@ -1,0 +1,19 @@
+/* app.css — minimal overrides only. All layout lives in index.css */
+
+/* Keep navbar always visible */
+.app-shell.auth-locked .navbar {
+  display: flex;
+}
+
+/* Page-level logout button (bottom of page) */
+.page-footer { margin-top: 16px; display: flex; justify-content: flex-end; }
+.page-logout-button {
+  background: none;
+  border: 1px solid rgba(148,163,184,0.2);
+  color: #64748b;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  transition: color 160ms, border-color 160ms;
+}
+.page-logout-button:hover { color: #f87171; border-color: rgba(248,113,113,0.35); }

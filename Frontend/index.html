@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disaster Response Coordination Management System</title>
+  <meta name="description" content="DRCMS – Centralised incident tracking, responder dispatch, and relief coordination for any disaster event." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="styles/index.css" />
+  <link rel="stylesheet" href="styles/app.css" />
+  <script>window.GOOGLE_MAPS_API_KEY = '';</script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ── Navbar ─────────────────────────────────────────── -->
+    <header class="navbar" role="banner">
+      <div class="navbar-inner">
+
+        <!-- Brand / Logo -->
+        <a class="navbar-brand" href="#home" role="button" aria-label="DRCMS Home">
+          <div class="navbar-logo" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <span class="navbar-wordmark">Welcome to DRCMS</span>
+        </a>
+
+        <!-- Nav links -->
+        <nav class="navbar-nav sidebar-nav horizontal-nav" aria-label="Primary navigation">
+          <button type="button" id="nav-home"            data-page="home"            class="nav-link active">Home</button>
+          <button type="button" id="nav-dashboard"       data-page="dashboard"       class="nav-link">Dashboard</button>
+          <button type="button" id="nav-disaster"        data-page="disaster"        class="nav-link">Disaster Map</button>
+          <button type="button" id="nav-adminreview"     data-page="adminreview"     class="nav-link">Admin Review</button>
+          <button type="button" id="nav-incidentreport"  data-page="incidentreport"  class="nav-link">Incident Reports</button>
+          <button type="button" id="nav-currentlocation" data-page="currentlocation" class="nav-link">Current Location</button>
+        </nav>
+
+        <!-- Right actions -->
+        <div class="navbar-actions">
+          <button class="navbar-logout logout-trigger hidden" type="button">Logout</button>
+        </div>
+
+      </div>
+    </header>
+    <!-- ── End Navbar ─────────────────────────────────────── -->
+
+    <main class="app-main">
+      <section id="page-content" class="page-content"></section>
+    </main>
+
+  </div>
+
+  <!-- Scrolling credit footer -->
+  <div class="scroll-footer" aria-hidden="true">
+    <div class="scroll-footer-track">
+      Designed and developed by Naga Bharath.Tadikonda and Karthik.Vatram
+    </div>
+  </div>
+
+  <script type="module" src="styles/main.js"></script>
+</body>
+</html>

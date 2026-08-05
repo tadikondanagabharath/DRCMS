@@ -1,0 +1,16 @@
+{
+  "project": "drcms",
+  "root": "Backend",
+  "build": {
+    "installCommand": "npm install",
+    "startCommand": "npm start"
+  },
+  "plugins": [
+    {
+      "name": "postgresql",
+      "inputs": {
+        "db_name": "drcms"
+      }
+    }
+  ]
+}

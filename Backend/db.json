@@ -1,0 +1,19 @@
+{
+  "metrics": {
+    "activeDisasters": 0,
+    "teamsDeployed": 0,
+    "availableResources": 0,
+    "incidentsOpen": 0,
+    "rescueTeams": 0,
+    "medicalUnits": 0,
+    "shelterCapacity": 0,
+    "supplyConvoys": 0,
+    "incidentContainment": 0,
+    "communicationCoverage": 0,
+    "resourceDelivery": 0,
+    "signalCoverage": 0,
+    "openChannels": 0
+  },
+  "alerts": [],
+  "users": []
+}

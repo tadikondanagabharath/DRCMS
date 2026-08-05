@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+Backend/node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files
+.env
+.DS_Store
+
+# Local workspace/tool files
+.claude/
+.github/Git/
+
+# Built frontend artifacts
+Frontend/dist/
+
+# Editor directories and files
+.vscode/
+.idea/
