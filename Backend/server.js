@@ -100,8 +100,19 @@ const headers = {
 
       if (pathname === '/api/message' && req.method === 'POST') {
         let body = '';
+        const maxSize = 1024 * 100; // 100KB limit
         req.on('data', (chunk) => {
-          body += chunk;
+          body += chunk.toString();
+          if (body.length > maxSize) {
+            req.pause();
+            res.writeHead(413, headers);
+            res.end(JSON.stringify({ error: 'Request body too large' }));
+          }
+        });
+        req.on('error', (error) => {
+          console.error('Request error:', error);
+          res.writeHead(400, headers);
+          res.end(JSON.stringify({ error: 'Request failed' }));
         });
         req.on('end', async () => {
           try {
@@ -136,8 +147,19 @@ const headers = {
 
       if (pathname === '/api/auth/signup' && req.method === 'POST') {
         let body = '';
+        const maxSize = 1024 * 100; // 100KB limit
         req.on('data', (chunk) => {
-          body += chunk;
+          body += chunk.toString();
+          if (body.length > maxSize) {
+            req.pause();
+            res.writeHead(413, headers);
+            res.end(JSON.stringify({ error: 'Request body too large' }));
+          }
+        });
+        req.on('error', (error) => {
+          console.error('Request error:', error);
+          res.writeHead(400, headers);
+          res.end(JSON.stringify({ error: 'Request failed' }));
         });
         req.on('end', async () => {
           try {
@@ -170,8 +192,19 @@ const headers = {
 
       if (pathname === '/api/auth/login' && req.method === 'POST') {
         let body = '';
+        const maxSize = 1024 * 100; // 100KB limit
         req.on('data', (chunk) => {
-          body += chunk;
+          body += chunk.toString();
+          if (body.length > maxSize) {
+            req.pause();
+            res.writeHead(413, headers);
+            res.end(JSON.stringify({ error: 'Request body too large' }));
+          }
+        });
+        req.on('error', (error) => {
+          console.error('Request error:', error);
+          res.writeHead(400, headers);
+          res.end(JSON.stringify({ error: 'Request failed' }));
         });
         req.on('end', async () => {
           try {

@@ -10,6 +10,7 @@ export default {
         <table class="reports-table">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Name</th>
               <th>Phone</th>
               <th>Message</th>
@@ -19,7 +20,7 @@ export default {
           </thead>
           <tbody id="alerts-table-body">
             <tr>
-              <td colspan="5">Loading alerts...</td>
+              <td colspan="6">Loading alerts...</td>
             </tr>
           </tbody>
         </table>
@@ -27,6 +28,14 @@ export default {
 
       <aside class="reports-sidebar glass glass-raise">
         <h3>Dispatch Summary</h3>
+        <div class="dispatch-stat-card glass">
+          <span>Active Incidents</span>
+          <strong id="active-incidents-list">incidents=</strong>
+        </div>
+        <div class="dispatch-stat-card glass">
+          <span>Total Reports</span>
+          <strong id="total-incidents-count">0</strong>
+        </div>
         <div class="dispatch-stat-card glass">
           <span>Priority Level</span>
           <strong class="text-danger">High Alert</strong>

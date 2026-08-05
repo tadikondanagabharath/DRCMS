@@ -234,13 +234,19 @@ async function refreshPageData(pageId) {
     const result = await fetchBackendJson('/api/alerts');
     const alerts = result?.alerts || [];
     const tbody = document.getElementById('alerts-table-body');
+    const incidentsList = document.getElementById('active-incidents-list');
+    const incidentsCount = document.getElementById('total-incidents-count');
+    
     if (!tbody) return;
 
     if (!alerts.length) {
-      tbody.innerHTML = '<tr><td colspan="5">No alerts found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6">No alerts found.</td></tr>';
+      if (incidentsList) incidentsList.textContent = 'incidents=';
+      if (incidentsCount) incidentsCount.textContent = '0';
       return;
     }
 
+    // Update table rows with incident IDs
     tbody.innerHTML = alerts
       .map((alert) => {
         const location = alert.latitude && alert.longitude
@@ -248,6 +254,7 @@ async function refreshPageData(pageId) {
           : 'Unknown';
         return `
           <tr>
+            <td>${alert.id}</td>
             <td>${alert.name}</td>
             <td>${alert.phone}</td>
             <td>${alert.message}</td>
@@ -257,6 +264,17 @@ async function refreshPageData(pageId) {
         `;
       })
       .join('');
+
+    // Update active incidents list in sidebar
+    if (incidentsList) {
+      const incidentIds = alerts.map((a) => a.id).join(',');
+      incidentsList.textContent = `incidents=${incidentIds}`;
+    }
+
+    // Update total incidents count
+    if (incidentsCount) {
+      incidentsCount.textContent = alerts.length;
+    }
   }
 
   if (pageId === 'adminreview') {
@@ -462,7 +480,9 @@ function bindPageEvents(pageId) {
         if (!response.ok) {
           throw new Error(result.error || 'Unable to send alert');
         }
-        alertStatus.textContent = 'Your alert was sent automatically to rescue teams.';
+        const newAlert = result.alert;
+        const incidentId = newAlert?.id || 'Unknown';
+        alertStatus.textContent = `Your alert was sent successfully! Incident ID: ${incidentId} - Dispatching to rescue teams...`;
         if (location) {
           lastAlertLocation = location;
           if (lastPageId === 'currentlocation') {
@@ -471,7 +491,24 @@ function bindPageEvents(pageId) {
           }
         }
         alertForm.reset();
+        
+        // Auto-refresh the incident report page
         await refreshPageData('incidentreport');
+        
+        // Update sidebar if currently viewing incident report
+        if (lastPageId === 'incidentreport') {
+          const result2 = await fetchBackendJson('/api/alerts');
+          const alerts = result2?.alerts || [];
+          const incidentsList = document.getElementById('active-incidents-list');
+          const incidentsCount = document.getElementById('total-incidents-count');
+          if (incidentsList) {
+            const incidentIds = alerts.map((a) => a.id).join(',');
+            incidentsList.textContent = `incidents=${incidentIds}`;
+          }
+          if (incidentsCount) {
+            incidentsCount.textContent = alerts.length;
+          }
+        }
       } catch (error) {
         alertStatus.textContent = `Send failed: ${error.message}`;
       }
