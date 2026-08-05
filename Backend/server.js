@@ -2,8 +2,19 @@
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
-const db = require('./db_postgres');
-const {
+let db;
+try {
+  if (process.env.DATABASE_URL) {
+    db = require('./db_postgres');
+  } else {
+    db = require('./db_fallback');
+  }
+} catch (err) {
+  console.error('Error loading database module, falling back to in-memory DB:', err && err.stack ? err.stack : err);
+  db = require('./db_fallback');
+}
+
+let {
   initDb,
   createAlert,
   getMetrics,
@@ -24,7 +35,19 @@ const headers = {
 
 (async () => {
   try {
-    await initDb();
+    try {
+      await initDb();
+    } catch (initErr) {
+      console.error('Database initialization failed:', initErr && initErr.stack ? initErr.stack : initErr);
+      if (db && db !== require('./db_fallback')) {
+        console.log('Switching to in-memory fallback database for local development.');
+        db = require('./db_fallback');
+        ({ initDb, createAlert, getMetrics, getAlerts, createUser, authenticateUser, reviewOpenAlerts } = db);
+        await initDb();
+      } else {
+        throw initErr;
+      }
+    }
     const server = http.createServer((req, res) => {
       const { pathname } = url.parse(req.url, true);
       if (req.method === 'OPTIONS') {
@@ -229,7 +252,7 @@ const headers = {
       console.log(`Backend server running on http://localhost:${port}`);
     });
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    console.error('Failed to initialize database:', error && error.stack ? error.stack : error);
     process.exit(1);
   }
 })();
