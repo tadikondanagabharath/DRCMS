@@ -1,7 +1,7 @@
 {
   "name": "project-drcms",
   "version": "1.0.0",
-  "description": "",
+  "description": "Disaster Response Coordination Management System (DRCMS) is a simple full-stack demo with a Node.js backend and a static frontend.",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
@@ -18,5 +18,14 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tadikondanagabharath/DRCMS.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/tadikondanagabharath/DRCMS/issues"
+  },
+  "homepage": "https://github.com/tadikondanagabharath/DRCMS#readme"
 }
