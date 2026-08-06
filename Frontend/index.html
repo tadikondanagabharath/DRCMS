@@ -1,71 +1,207 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Disaster Response Coordination Management System</title>
-  <meta name="description" content="DRCMS – Centralised incident tracking, responder dispatch, and relief coordination for any disaster event." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="styles/index.css" />
-  <link rel="stylesheet" href="styles/app.css" />
-  <script>window.GOOGLE_MAPS_API_KEY = '';</script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-</head>
-<body>
-  <div class="app-shell">
-
-    <!-- ── Navbar ─────────────────────────────────────────── -->
-    <header class="navbar" role="banner">
-      <div class="navbar-inner">
-
-        <!-- Brand / Logo -->
-        <a class="navbar-brand" href="#home" role="button" aria-label="DRCMS Home">
-          <div class="navbar-logo" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="2" y1="12" x2="22" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-          </div>
-          <span class="navbar-wordmark">Welcome to DRCMS</span>
-        </a>
-
-        <!-- Nav links -->
-        <nav class="navbar-nav sidebar-nav horizontal-nav" aria-label="Primary navigation">
-          <button type="button" id="nav-home"            data-page="home"            class="nav-link active">Home</button>
-          <button type="button" id="nav-dashboard"       data-page="dashboard"       class="nav-link">Dashboard</button>
-          <button type="button" id="nav-disaster"        data-page="disaster"        class="nav-link">Disaster Map</button>
-          <button type="button" id="nav-adminreview"     data-page="adminreview"     class="nav-link">Admin Review</button>
-          <button type="button" id="nav-incidentreport"  data-page="incidentreport"  class="nav-link">Incident Reports</button>
-          <button type="button" id="nav-currentlocation" data-page="currentlocation" class="nav-link">Current Location</button>
-        </nav>
-
-        <!-- Right actions -->
-        <div class="navbar-actions">
-          <button class="navbar-logout logout-trigger hidden" type="button">Logout</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DRCMS | Disaster Response Coordination</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Disaster Response Coordination Management System</p>
+          <h1>Coordinate fast, communicate clearly, respond safely.</h1>
+          <p class="hero-copy">
+            Monitor incidents, manage incoming alerts, and support rescue teams through a single operational view.
+          </p>
         </div>
+      </header>
 
-      </div>
-    </header>
-    <!-- ── End Navbar ─────────────────────────────────────── -->
+      <main class="content-grid">
+        <section class="panel auth-panel" id="auth-view">
+          <div class="panel-header">
+            <h2 id="auth-title">Welcome back</h2>
+            <p id="auth-subtitle">Access the response dashboard securely.</p>
+          </div>
 
-    <main class="app-main">
-      <section id="page-content" class="page-content"></section>
-    </main>
+          <form id="login-form" class="stacked-form">
+            <label>
+              Email
+              <input type="email" id="login-email" required />
+            </label>
+            <label>
+              Password
+              <input type="password" id="login-password" required />
+            </label>
+            <button type="submit">Sign in</button>
+          </form>
 
-  </div>
+          <form id="signup-form" class="stacked-form hidden">
+            <label>
+              Full name
+              <input type="text" id="signup-name" required />
+            </label>
+            <label>
+              Email
+              <input type="email" id="signup-email" required />
+            </label>
+            <label>
+              Password
+              <input type="password" id="signup-password" required />
+            </label>
+            <button type="submit">Create account</button>
+          </form>
 
-  <!-- Scrolling credit footer -->
-  <div class="scroll-footer" aria-hidden="true">
-    <div class="scroll-footer-track">
-      Designed and developed by Naga Bharath.Tadikonda and Karthik.Vatram
+          <p class="switch-link" id="auth-switch">
+            Need an account? <a href="#" data-mode="signup">Create one</a>
+          </p>
+        </section>
+
+        <section class="panel dashboard-panel hidden" id="dashboard-view">
+          <div class="panel-header dashboard-header">
+            <div>
+              <p class="eyebrow">Operations dashboard</p>
+              <h2 id="dashboard-title">Welcome</h2>
+            </div>
+            <button id="logout-btn" class="ghost-btn">Log out</button>
+          </div>
+
+          <div class="tabs" id="dashboard-tabs">
+            <button type="button" class="tab-btn active" data-tab="home">Home</button>
+            <button type="button" class="tab-btn" data-tab="disaster">Disaster</button>
+            <button type="button" class="tab-btn" data-tab="alerts">Alerts</button>
+            <button type="button" class="tab-btn" data-tab="recent">Recent Incidents</button>
+            <button type="button" class="tab-btn" data-tab="location">Current Location</button>
+            <button type="button" class="tab-btn" data-tab="resources">Resources</button>
+          </div>
+
+          <div id="tab-home" class="tab-content active">
+            <div class="stats-grid" id="metrics-grid"></div>
+            <div class="card wide-card">
+              <h3>Today at a glance</h3>
+              <p>Monitor active incidents, dispatch readiness, and resource availability from this single view.</p>
+              <ul class="check-list">
+                <li>Review incoming incident messages.</li>
+                <li>Prioritize disaster response by severity.</li>
+                <li>Coordinate shelters, medical teams, and supply convoys.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div id="tab-disaster" class="tab-content">
+            <div class="dashboard-actions">
+              <div class="card">
+                <h3>Disaster response focus</h3>
+                <ul class="check-list">
+                  <li>Floods: secure evacuation routes and shelter capacity.</li>
+                  <li>Wildfires: deploy air support and containment teams.</li>
+                  <li>Earthquakes: confirm structural safety and medical triage.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>Priority checklist</h3>
+                <ul class="check-list">
+                  <li>Confirm communications coverage.</li>
+                  <li>Allocate rescue and medical units.</li>
+                  <li>Verify supply convoy readiness.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-alerts" class="tab-content">
+            <div class="dashboard-actions">
+              <div class="card">
+                <h3>Create incident alert</h3>
+                <form id="alert-form" class="stacked-form compact-form">
+                  <label>
+                    Your name
+                    <input type="text" id="alert-name" required />
+                  </label>
+                  <label>
+                    Phone
+                    <input type="text" id="alert-phone" required />
+                  </label>
+                  <label>
+                    Incident details
+                    <textarea id="alert-message" rows="4" required></textarea>
+                  </label>
+                  <button type="submit">Submit alert</button>
+                  <p id="alert-feedback" class="status-message"></p>
+                </form>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3>Recent alerts</h3>
+                  <button id="review-btn" class="ghost-btn">Review alerts</button>
+                </div>
+                <div id="alerts-list" class="alerts-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-recent" class="tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h3>Recent incidents</h3>
+                <button id="refresh-incidents-btn" class="ghost-btn">Refresh</button>
+              </div>
+              <div id="recent-incidents-list" class="alerts-list"></div>
+            </div>
+          </div>
+
+          <div id="tab-location" class="tab-content">
+            <div class="full-screen-card">
+              <div class="card location-card">
+                <div class="card-header">
+                  <div>
+                    <h3>Current location</h3>
+                    <p id="location-status">Fetching your current position…</p>
+                  </div>
+                  <button id="refresh-location-btn" class="ghost-btn" type="button">Refresh location</button>
+                </div>
+                <div id="location-details" class="location-details">
+                  <p>Latitude: --</p>
+                  <p>Longitude: --</p>
+                  <p>Accuracy: --</p>
+                </div>
+                <div id="map-frame" class="map-frame">
+                  <p class="small">Allow location access to view the live map.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-resources" class="tab-content">
+            <div class="dashboard-actions">
+              <div class="card">
+                <h3>Resource readiness</h3>
+                <ul class="check-list">
+                  <li>Rescue teams: online and staged.</li>
+                  <li>Medical units: prepared for rapid deployment.</li>
+                  <li>Supply convoys: ready for critical deliveries.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>Support channels</h3>
+                <ul class="check-list">
+                  <li>Emergency coordination center: active.</li>
+                  <li>Satellite communication: available.</li>
+                  <li>Volunteer support desk: available.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
-  </div>
 
-  <script type="module" src="styles/main.js"></script>
-</body>
+    <script>
+      window.MAPS_API_KEY = window.MAPS_API_KEY || 'AIzaSyC7ane3AgxaNvEbCb4ikxRP5Tb1cW9Kjh0';
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
 </html>

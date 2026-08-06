@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 const defaultMetrics = {
   activeDisasters: 0,
@@ -166,8 +167,8 @@ async function normalizeMetrics() {
   const openAlerts = alerts.filter((alert) => alert.status === 'open').length;
   const metrics = {
     ...defaultMetrics,
-    activeDisasters: openAlerts,
-    incidentsOpen: totalAlerts,
+    activeDisasters: 0,
+    incidentsOpen: 0,
     teamsDeployed: Math.min(24, totalAlerts * 2),
     rescueTeams: Math.min(18, totalAlerts),
     availableResources: Math.max(0, 120 - totalAlerts * 5),
@@ -218,7 +219,7 @@ async function normalizeMetrics() {
 
 async function createAlert({ name, phone, message, location }) {
   const timestamp = new Date().toISOString();
-  const review = autoReviewAlert({ message, location });
+  const status = 'open';
   const result = await query(
     `INSERT INTO alerts (
       name, phone, message, latitude, longitude, accuracy,
@@ -234,12 +235,12 @@ async function createAlert({ name, phone, message, location }) {
       location?.longitude ?? null,
       location?.accuracy ?? null,
       timestamp,
-      review.status,
-      review.sent_to,
-      review.reviewed_at,
-      review.review_reason,
-      review.contacted,
-      review.review_source,
+      status,
+      'monitoring',
+      null,
+      'Pending review',
+      0,
+      'pending',
     ]
   );
 
@@ -252,20 +253,28 @@ async function createAlert({ name, phone, message, location }) {
     longitude: location?.longitude ?? null,
     accuracy: location?.accuracy ?? null,
     timestamp,
-    status: review.status,
-    sent_to: review.sent_to,
-    reviewed_at: review.reviewed_at,
-    review_reason: review.review_reason,
-    contacted: review.contacted,
-    review_source: review.review_source,
+    status,
+    sent_to: 'monitoring',
+    reviewed_at: null,
+    review_reason: 'Pending review',
+    contacted: 0,
+    review_source: 'pending',
   };
-
-  if (review.status === 'verified') {
-    dispatchRescueTeams(alert);
-  }
 
   await normalizeMetrics();
   return alert;
+}
+
+async function hashPassword(plainPassword) {
+  return bcrypt.hash(plainPassword, 10);
+}
+
+async function verifyPassword(candidatePassword, storedPassword) {
+  if (!storedPassword) return false;
+  if (storedPassword.startsWith('$2')) {
+    return bcrypt.compare(candidatePassword, storedPassword);
+  }
+  return candidatePassword === storedPassword;
 }
 
 async function findUserByEmail(email) {
@@ -278,17 +287,22 @@ async function createUser({ name, email, password }) {
     throw new Error('User already exists');
   }
   const createdAt = new Date().toISOString();
+  const hashedPassword = await hashPassword(password);
   const result = await query(
     `INSERT INTO users (name, email, password, createdAt)
      VALUES ($1,$2,$3,$4) RETURNING id`,
-    [name, email, password, createdAt]
+    [name, email, hashedPassword, createdAt]
   );
   return { id: result.rows[0].id, name, email };
 }
 
 async function authenticateUser({ email, password }) {
   const user = await findUserByEmail(email);
-  if (!user || user.password !== password) {
+  if (!user) {
+    return null;
+  }
+  const passwordMatches = await verifyPassword(password, user.password);
+  if (!passwordMatches) {
     return null;
   }
   return { id: user.id, name: user.name, email: user.email };
