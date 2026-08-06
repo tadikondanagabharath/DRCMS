@@ -16,7 +16,5 @@
     "concurrently": "^8.2.0",
     "http-server": "^14.1.1"
   },
-  "dependencies": {
-    "git": "^0.1.5"
-  }
+  "dependencies": {}
 }
