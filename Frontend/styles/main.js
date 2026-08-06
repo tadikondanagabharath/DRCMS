@@ -38,6 +38,27 @@ let googleMarker = null;
 let googleMapsLoading = false;
 let lastAlertLocation = null;
 
+const apiClient = window.axios?.create({
+  baseURL: window.API_BASE_URL || 'http://localhost:4000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+async function requestJson(method, path, payload = null) {
+  if (!apiClient) {
+    throw new Error('Axios is not available');
+  }
+
+  const response = await apiClient.request({
+    method,
+    url: path,
+    data: payload,
+  });
+
+  return response.data;
+}
+
 function getHslaColor(hue, saturation, lightness, alpha) {
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
 }
@@ -160,11 +181,7 @@ function updateHomeGreeting() {
 
 async function fetchBackendJson(path) {
   try {
-    const response = await fetch(`http://localhost:4000${path}`);
-    if (!response.ok) {
-      throw new Error(`Backend request failed: ${response.status}`);
-    }
-    return await response.json();
+    return await requestJson('GET', path);
   } catch (error) {
     console.error(error);
     return null;
@@ -464,22 +481,12 @@ function bindPageEvents(pageId) {
       }
 
       try {
-        const response = await fetch('http://localhost:4000/api/message', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name,
-            phone,
-            message,
-            location,
-          }),
+        const result = await requestJson('POST', '/api/message', {
+          name,
+          phone,
+          message,
+          location,
         });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || 'Unable to send alert');
-        }
         const newAlert = result.alert;
         const incidentId = newAlert?.id || 'Unknown';
         alertStatus.textContent = `Your alert was sent successfully! Incident ID: ${incidentId} - Dispatching to rescue teams...`;
@@ -528,17 +535,7 @@ function bindPageEvents(pageId) {
       }
       authStatus.textContent = 'Signing in...';
       try {
-        const response = await fetch('http://localhost:4000/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || result.message || 'Login failed');
-        }
+        const result = await requestJson('POST', '/api/auth/login', { email, password });
         setAuthUser(result.user);
         authStatus.textContent = 'Login successful. Redirecting...';
         window.location.hash = '#home';
@@ -563,17 +560,7 @@ function bindPageEvents(pageId) {
       }
       authStatus.textContent = 'Creating your account...';
       try {
-        const response = await fetch('http://localhost:4000/api/auth/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name, email, password }),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || result.message || 'Signup failed');
-        }
+        const result = await requestJson('POST', '/api/auth/signup', { name, email, password });
         authStatus.textContent = 'Account created. Redirecting to home...';
         setAuthUser(result.user);
         window.location.hash = '#home';
@@ -627,13 +614,7 @@ function bindPageEvents(pageId) {
       reviewButton.disabled = true;
       if (status) status.textContent = 'Running automated review...';
       try {
-        const response = await fetch('http://localhost:4000/api/admin/review-alerts', {
-          method: 'POST',
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || 'Review failed');
-        }
+        const result = await requestJson('POST', '/api/admin/review-alerts');
         const reviewed = Array.isArray(result.reviewed) ? result.reviewed : [];
         const verifiedCount = reviewed.filter((item) => item.status === 'verified').length;
         const falseCount = reviewed.filter((item) => item.status === 'false alarm').length;
