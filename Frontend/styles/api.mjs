@@ -3,7 +3,7 @@ function getApiCandidates() {
     ? window.location.origin
     : '';
 
-  return [currentOrigin, 'http://127.0.0.1:4000', 'http://localhost:4000'].filter(Boolean);
+  return [currentOrigin, ''].filter(Boolean);
 }
 
 function buildApiUrl(path) {
@@ -18,7 +18,8 @@ async function apiRequest(path, options = {}) {
 
   for (const baseUrl of candidates) {
     try {
-      const response = await fetch(`${baseUrl}${normalizedPath}`, options);
+      const requestUrl = baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath;
+      const response = await fetch(requestUrl, options);
       const contentType = response.headers.get('content-type') || '';
       const data = contentType.includes('application/json') ? await response.json() : await response.text();
 

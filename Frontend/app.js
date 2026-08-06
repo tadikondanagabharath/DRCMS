@@ -1,5 +1,5 @@
 const currentOrigin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : '';
-const API_BASES = [currentOrigin, 'http://localhost:4000', 'http://localhost:4001', 'http://localhost:4002'].filter(Boolean);
+const API_BASES = [currentOrigin, ''].filter(Boolean);
 
 const authView = document.getElementById('auth-view');
 const dashboardView = document.getElementById('dashboard-view');
@@ -154,7 +154,8 @@ async function api(path, options = {}) {
   let lastError = new Error('Unable to reach the backend.');
   for (const baseUrl of API_BASES) {
     try {
-      const response = await fetch(`${baseUrl}${path}`, requestOptions);
+      const requestUrl = baseUrl ? `${baseUrl}${path}` : path;
+      const response = await fetch(requestUrl, requestOptions);
       const contentType = response.headers.get('content-type') || '';
       const data = contentType.includes('application/json') ? await response.json() : await response.text();
       if (response.ok) {
