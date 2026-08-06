@@ -284,6 +284,15 @@ const headers = {
     server.listen(port, () => {
       console.log(`Backend server running on http://localhost:${port}`);
     });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Please stop the existing backend or set PORT to another available port.`);
+      } else {
+        console.error('Backend server error:', error && error.stack ? error.stack : error);
+      }
+      process.exit(1);
+    });
   } catch (error) {
     console.error('Failed to initialize database:', error && error.stack ? error.stack : error);
     process.exit(1);
