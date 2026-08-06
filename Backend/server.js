@@ -1,4 +1,6 @@
 ﻿const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const url = require('url');
 const fallbackDb = require('./db_fallback');
 
@@ -43,22 +45,105 @@ let {
 } = resolveDbMethods(db);
 
 const preferredPorts = [Number(process.env.PORT) || 4000, 4001, 4002];
+const frontendRoot = path.resolve(__dirname, '..', 'Frontend');
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3001,http://localhost:3000,http://127.0.0.1:3001,http://127.0.0.1:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-const headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
-  'Access-Control-Max-Age': '86400',
-};
+function getCorsHeaders(req) {
+  const requestOrigin = req.headers.origin;
+  const allowAll = process.env.ALLOW_ALL_ORIGINS === 'true';
+  const isAllowed = Boolean(requestOrigin && (allowAll || allowedOrigins.includes(requestOrigin)));
+  const origin = isAllowed ? requestOrigin : (allowedOrigins[0] || '*');
 
-function sendJson(res, status, data) {
-  res.writeHead(status, headers);
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
+function applyCorsHeaders(res, req) {
+  const headers = getCorsHeaders(req);
+  Object.entries(headers).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+}
+
+function sendJson(res, status, data, req) {
+  applyCorsHeaders(res, req);
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   if (status === 204) {
     res.end();
     return;
   }
   res.end(JSON.stringify(data));
+}
+
+function getContentType(filePath) {
+  const extension = path.extname(filePath).toLowerCase();
+  switch (extension) {
+    case '.html':
+      return 'text/html; charset=utf-8';
+    case '.css':
+      return 'text/css; charset=utf-8';
+    case '.js':
+      return 'application/javascript; charset=utf-8';
+    case '.json':
+      return 'application/json; charset=utf-8';
+    case '.svg':
+      return 'image/svg+xml';
+    case '.png':
+      return 'image/png';
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.webp':
+      return 'image/webp';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+function serveStatic(req, res) {
+  const { pathname } = url.parse(req.url || '/', true);
+  const safePath = decodeURIComponent(pathname || '/');
+  const relativePath = safePath === '/' ? 'index.html' : safePath.replace(/^\/+/, '');
+  const resolvedPath = path.resolve(frontendRoot, relativePath);
+  const basePath = path.resolve(frontendRoot);
+  const relativeToBase = path.relative(basePath, resolvedPath);
+
+  if (relativeToBase.startsWith('..') || path.isAbsolute(relativeToBase)) {
+    sendJson(res, 403, { error: 'Forbidden' }, req);
+    return;
+  }
+
+  const filePath = fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()
+    ? resolvedPath
+    : path.join(basePath, 'index.html');
+
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    sendJson(res, 404, { error: 'Not found' }, req);
+    return;
+  }
+
+  applyCorsHeaders(res, req);
+  res.writeHead(200, {
+    'Content-Type': getContentType(filePath),
+    'Cache-Control': 'no-store',
+  });
+
+  const stream = fs.createReadStream(filePath);
+  stream.on('error', () => {
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: 'Unable to read static asset' }, req);
+      return;
+    }
+    res.destroy();
+  });
+  stream.pipe(res);
 }
 
 function parseJsonBody(req) {
@@ -89,111 +174,121 @@ async function handleRequest(req, res) {
   const { pathname } = url.parse(req.url || '', true);
 
   if (req.method === 'OPTIONS') {
-    sendJson(res, 204, {});
+    sendJson(res, 204, {}, req);
     return;
   }
 
-  if (req.method === 'GET' && pathname === '/api/status') {
-    const metrics = await getMetrics();
-    sendJson(res, 200, { status: 'ok', metrics });
-    return;
-  }
-
-  if (req.method === 'GET' && pathname === '/api/alerts') {
-    const alerts = await getAlerts();
-    sendJson(res, 200, { status: 'ok', alerts });
-    return;
-  }
-
-  if (req.method === 'GET' && pathname === '/api/incidents') {
-    const incidents = await getIncidents();
-    sendJson(res, 200, { status: 'ok', incidents });
-    return;
-  }
-
-  if (req.method === 'GET' && pathname === '/api/emergency-broadcasts') {
-    const broadcasts = await getEmergencyBroadcasts();
-    sendJson(res, 200, { status: 'ok', broadcasts });
-    return;
-  }
-
-  if (req.method === 'POST' && pathname === '/api/admin/review-alerts') {
-    const reviewed = await reviewOpenAlerts();
-    sendJson(res, 200, { status: 'ok', reviewed });
-    return;
-  }
-
-  if (req.method === 'POST' && pathname === '/api/message') {
-    const payload = await parseJsonBody(req);
-    const name = String(payload.name || '').trim();
-    const phone = String(payload.phone || '').trim();
-    const message = String(payload.message || payload.text || '').trim();
-    const location = payload.location || null;
-
-    if (!name || !phone || !message) {
-      sendJson(res, 400, { error: 'Name, phone, and message are required.' });
+  if (pathname && pathname.startsWith('/api/')) {
+    if (req.method === 'GET' && pathname === '/api/status') {
+      const metrics = await getMetrics();
+      sendJson(res, 200, { status: 'ok', metrics }, req);
       return;
     }
 
-    const verification = await verifyIncident({ name, phone, message, location });
-    const alert = await createAlert({ name, phone, message, location });
-    sendJson(res, 200, {
-      status: 'ok',
-      alert,
-      verification,
-      message: verification.isLikelyReal ? 'Incident accepted and emergency channels notified.' : 'Incident recorded for review.',
-    });
-    return;
-  }
-
-  if (req.method === 'POST' && pathname === '/api/incident/verify') {
-    const payload = await parseJsonBody(req);
-    const verification = await verifyIncident(payload);
-    sendJson(res, 200, { status: 'ok', verification });
-    return;
-  }
-
-  if (req.method === 'POST' && pathname === '/api/auth/signup') {
-    const payload = await parseJsonBody(req);
-    const name = String(payload.name || '').trim();
-    const email = String(payload.email || '').trim();
-    const password = String(payload.password || '').trim();
-
-    if (!name || !email || !password) {
-      sendJson(res, 400, { error: 'Name, email, and password are required.' });
+    if (req.method === 'GET' && pathname === '/api/alerts') {
+      const alerts = await getAlerts();
+      sendJson(res, 200, { status: 'ok', alerts }, req);
       return;
     }
 
-    try {
-      const user = await createUser({ name, email, password });
-      sendJson(res, 201, { status: 'ok', user });
-    } catch (error) {
-      sendJson(res, 409, { error: error.message });
-    }
-    return;
-  }
-
-  if (req.method === 'POST' && pathname === '/api/auth/login') {
-    const payload = await parseJsonBody(req);
-    const email = String(payload.email || '').trim();
-    const password = String(payload.password || '').trim();
-
-    if (!email || !password) {
-      sendJson(res, 400, { error: 'Email and password are required.' });
+    if (req.method === 'GET' && pathname === '/api/incidents') {
+      const incidents = await getIncidents();
+      sendJson(res, 200, { status: 'ok', incidents }, req);
       return;
     }
 
-    const user = await authenticateUser({ email, password });
-    if (!user) {
-      sendJson(res, 401, { error: 'Invalid email or password.' });
+    if (req.method === 'GET' && pathname === '/api/emergency-broadcasts') {
+      const broadcasts = await getEmergencyBroadcasts();
+      sendJson(res, 200, { status: 'ok', broadcasts }, req);
       return;
     }
 
-    sendJson(res, 200, { status: 'ok', user });
+    if (req.method === 'POST' && pathname === '/api/admin/review-alerts') {
+      const reviewed = await reviewOpenAlerts();
+      sendJson(res, 200, { status: 'ok', reviewed }, req);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/message') {
+      const payload = await parseJsonBody(req);
+      const name = String(payload.name || '').trim();
+      const phone = String(payload.phone || '').trim();
+      const message = String(payload.message || payload.text || '').trim();
+      const location = payload.location || null;
+
+      if (!name || !phone || !message) {
+        sendJson(res, 400, { error: 'Name, phone, and message are required.' }, req);
+        return;
+      }
+
+      const verification = await verifyIncident({ name, phone, message, location });
+      const alert = await createAlert({ name, phone, message, location });
+      sendJson(res, 200, {
+        status: 'ok',
+        alert,
+        verification,
+        message: verification.isLikelyReal ? 'Incident accepted and emergency channels notified.' : 'Incident recorded for review.',
+      }, req);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/incident/verify') {
+      const payload = await parseJsonBody(req);
+      const verification = await verifyIncident(payload);
+      sendJson(res, 200, { status: 'ok', verification }, req);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/auth/signup') {
+      const payload = await parseJsonBody(req);
+      const name = String(payload.name || '').trim();
+      const email = String(payload.email || '').trim();
+      const password = String(payload.password || '').trim();
+
+      if (!name || !email || !password) {
+        sendJson(res, 400, { error: 'Name, email, and password are required.' }, req);
+        return;
+      }
+
+      try {
+        const user = await createUser({ name, email, password });
+        sendJson(res, 201, { status: 'ok', user }, req);
+      } catch (error) {
+        sendJson(res, 409, { error: error.message }, req);
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/auth/login') {
+      const payload = await parseJsonBody(req);
+      const email = String(payload.email || '').trim();
+      const password = String(payload.password || '').trim();
+
+      if (!email || !password) {
+        sendJson(res, 400, { error: 'Email and password are required.' }, req);
+        return;
+      }
+
+      const user = await authenticateUser({ email, password });
+      if (!user) {
+        sendJson(res, 401, { error: 'Invalid email or password.' }, req);
+        return;
+      }
+
+      sendJson(res, 200, { status: 'ok', user }, req);
+      return;
+    }
+
+    sendJson(res, 404, { error: 'Not found' }, req);
     return;
   }
 
-  sendJson(res, 404, { error: 'Not found' });
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    serveStatic(req, res);
+    return;
+  }
+
+  sendJson(res, 404, { error: 'Not found' }, req);
 }
 
 process.on('uncaughtException', (error) => {
@@ -208,11 +303,11 @@ async function startServer() {
   const requestHandler = (req, res) => {
     handleRequest(req, res).catch((error) => {
       if (error.message === 'Payload too large') {
-        sendJson(res, 413, { error: 'Request body too large' });
+        sendJson(res, 413, { error: 'Request body too large' }, req);
         return;
       }
       console.error('Request handler error:', error && error.stack ? error.stack : error);
-      sendJson(res, 500, { error: 'Internal server error' });
+      sendJson(res, 500, { error: 'Internal server error' }, req);
     });
   };
 
@@ -222,7 +317,7 @@ async function startServer() {
       const server = http.createServer(requestHandler);
       await new Promise((resolve, reject) => {
         server.once('error', reject);
-        server.listen(port, () => resolve(server));
+        server.listen(port, '0.0.0.0', () => resolve(server));
       });
       server.on('error', (error) => {
         if (error.code === 'EADDRINUSE') {
@@ -231,7 +326,7 @@ async function startServer() {
           console.error('Server error:', error && error.stack ? error.stack : error);
         }
       });
-      console.log(`Backend API listening on http://localhost:${port}`);
+      console.log(`DRCMS app listening on http://0.0.0.0:${port}`);
       return server;
     } catch (error) {
       if (error.code === 'EADDRINUSE') {

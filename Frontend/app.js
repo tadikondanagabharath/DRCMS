@@ -1,4 +1,5 @@
-const API_BASES = ['http://localhost:4000', 'http://localhost:4001', 'http://localhost:4002'];
+const currentOrigin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : '';
+const API_BASES = [currentOrigin, 'http://localhost:4000', 'http://localhost:4001', 'http://localhost:4002'].filter(Boolean);
 
 const authView = document.getElementById('auth-view');
 const dashboardView = document.getElementById('dashboard-view');
@@ -143,24 +144,23 @@ function getCurrentLocation(force = false) {
 async function api(path, options = {}) {
   const requestOptions = {
     headers: { 'Content-Type': 'application/json' },
-    validateStatus: () => true,
     ...options,
   };
 
-  if (requestOptions.body) {
-    requestOptions.data = requestOptions.body;
-    delete requestOptions.body;
+  if (requestOptions.body && typeof requestOptions.body !== 'string') {
+    requestOptions.body = JSON.stringify(requestOptions.body);
   }
 
   let lastError = new Error('Unable to reach the backend.');
   for (const baseUrl of API_BASES) {
     try {
-      const response = await axios({ url: `${baseUrl}${path}`, ...requestOptions });
-      const data = response.data || {};
-      if (response.status >= 200 && response.status < 400) {
-        return data;
+      const response = await fetch(`${baseUrl}${path}`, requestOptions);
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await response.json() : await response.text();
+      if (response.ok) {
+        return typeof data === 'string' ? { message: data } : (data || {});
       }
-      lastError = new Error(data.error || data.message || 'Request failed');
+      lastError = new Error(typeof data === 'object' && data !== null ? (data.error || data.message || 'Request failed') : (data || 'Request failed'));
     } catch (error) {
       lastError = error;
     }

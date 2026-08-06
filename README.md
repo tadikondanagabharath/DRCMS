@@ -61,8 +61,8 @@ A simple validation workflow is included under `.github/workflows/nodejs.yml`. I
 ## Notes
 
 - The backend uses PostgreSQL for persistence and does not commit local database state.
-- If you need a production-ready deployment, add a build process and a dedicated hosting service.
- - If you need a production-ready deployment, add a build process and a dedicated hosting service.
+- The app now serves the frontend and API from a single Node.js process for deployment.
+- Set the CORS origins through CORS_ORIGINS when the frontend is hosted on a different origin.
 
 ## Deploying the Backend to Railway
 

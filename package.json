@@ -7,8 +7,8 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"cd Backend && npm start\" \"cd Frontend && http-server . -p 3001\"",
-    "start:backend": "cd Backend && npm start",
+    "start": "node index.js",
+    "start:backend": "node Backend/server.js",
     "start:frontend": "cd Frontend && http-server . -p 3001",
     "build": "echo \"No build step defined for DRCMS.\""
   },
