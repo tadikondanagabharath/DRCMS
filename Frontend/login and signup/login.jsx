@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 const lampColor = "#ffdd6a";
 export default function Login() {
   const navigate = useNavigate();
@@ -14,18 +13,17 @@ export default function Login() {
   const handleLogin = async (event) => {
     event.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/api/auth/login", {
-        email,
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      alert(res.data.message || "Logged in");
-      navigate("/dashboard");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || 'Login failed');
+      alert(data.message || 'Logged in');
+      navigate('/dashboard');
     } catch (err) {
-      if (err.response) {
-        alert(err.response.data.message || err.response.data.error || "Login failed");
-      } else {
-        alert("Server not running");
-      }
+      alert(err.message || 'Server not running');
     }
   };
   useEffect(() => {

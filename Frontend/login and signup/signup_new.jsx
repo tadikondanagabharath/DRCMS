@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 function Signup() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -53,19 +52,17 @@ function Signup() {
   const handleSignup = async (event) => {
     event.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/api/auth/signup", {
-        name,
-        email,
-        password,
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
       });
-      alert(res.data.message || "Account created");
-      navigate("/");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || 'Signup failed');
+      alert(data.message || 'Account created');
+      navigate('/');
     } catch (err) {
-      if (err.response) {
-        alert(err.response.data.error || err.response.data.message || "Signup failed");
-      } else {
-        alert("Server not running");
-      }
+      alert(err.message || 'Server not running');
     }
   };
   const lightStyle = {
