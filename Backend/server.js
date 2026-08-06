@@ -13,6 +13,21 @@ function loadDatabase() {
   return fallbackDb;
 }
 
+function resolveDbMethods(database) {
+  return {
+    initDb: database.initDb || fallbackDb.initDb,
+    createAlert: database.createAlert || fallbackDb.createAlert,
+    getMetrics: database.getMetrics || fallbackDb.getMetrics,
+    getAlerts: database.getAlerts || fallbackDb.getAlerts,
+    createUser: database.createUser || fallbackDb.createUser,
+    authenticateUser: database.authenticateUser || fallbackDb.authenticateUser,
+    reviewOpenAlerts: database.reviewOpenAlerts || fallbackDb.reviewOpenAlerts,
+    verifyIncident: database.verifyIncident || fallbackDb.verifyIncident,
+    getIncidents: database.getIncidents || fallbackDb.getIncidents,
+    getEmergencyBroadcasts: database.getEmergencyBroadcasts || fallbackDb.getEmergencyBroadcasts,
+  };
+}
+
 let db = loadDatabase();
 let {
   initDb,
@@ -25,7 +40,7 @@ let {
   verifyIncident,
   getIncidents,
   getEmergencyBroadcasts,
-} = db;
+} = resolveDbMethods(db);
 
 const preferredPorts = [Number(process.env.PORT) || 4000, 4001, 4002];
 
@@ -244,7 +259,7 @@ async function startServer() {
         verifyIncident,
         getIncidents,
         getEmergencyBroadcasts,
-      } = db);
+      } = resolveDbMethods(db));
       await initDb();
     } else {
       process.exit(1);
