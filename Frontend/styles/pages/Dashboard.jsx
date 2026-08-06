@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiRequest } from "../api.mjs";
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(null);
@@ -7,12 +8,10 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [metricsRes, alertsRes] = await Promise.all([
-          fetch("/api/status"),
-          fetch("/api/alerts"),
+        const [metricsData, alertsData] = await Promise.all([
+          apiRequest("/api/status"),
+          apiRequest("/api/alerts"),
         ]);
-        const metricsData = await metricsRes.json();
-        const alertsData = await alertsRes.json();
         setMetrics(metricsData.metrics || null);
         setAlerts(alertsData.alerts || []);
       } catch (error) {

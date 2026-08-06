@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiRequest } from "../api.mjs";
 
 const lampColor = "#ffdd6a";
 
@@ -14,16 +15,11 @@ export default function Signup() {
   const handleSignup = async (event) => {
     event.preventDefault();
     try {
-      const response = await fetch("/api/auth/signup", {
+      const data = await apiRequest("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "Signup failed");
-      }
 
       alert(data.message || "Account created");
       navigate("/", { state: { email, password } });
